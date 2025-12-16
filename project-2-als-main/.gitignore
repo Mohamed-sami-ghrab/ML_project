@@ -1,0 +1,42 @@
+# --- Python & General ---
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+venv/
+env/
+.venv/
+
+# --- Jupyter Notebooks ---
+.ipynb_checkpoints/
+*.ipynb
+
+# --- Project Specific: Data & Models ---
+data/
+
+# Ignore trained model weights (files are too large for standard git)
+*.pth
+*.pt
+*.ckpt
+*.h5
+
+# --- Experiment Logging & Outputs ---
+# Ignore the experiments folder we defined (logs, tensorboard, checkpoints)
+experiments/
+runs/
+outputs/
+multirun/
+*.log
+
+# --- TensorBoard specific (if generated outside experiments folder) ---
+*.tfevents.*
+
+# --- Submission Files ---
+*.csv
+submission.csv
+
+# --- IDEs & OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
