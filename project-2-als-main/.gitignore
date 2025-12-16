@@ -12,7 +12,6 @@ env/
 *.ipynb
 
 # --- Project Specific: Data & Models ---
-data/
 
 # Ignore trained model weights (files are too large for standard git)
 *.pth
