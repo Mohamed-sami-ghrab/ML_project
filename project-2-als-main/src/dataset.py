@@ -1,62 +1,61 @@
-import torch
 import os
-from PIL import Image
-import cv2 
+import cv2
+import numpy as np
+import torch
+from torch.utils.data import Dataset as BaseDataset
 
-class Dataset(torch.utils.data.Dataset):
-    """
-    A custom PyTorch Dataset for loading images and their corresponding masks.
-    Args:
-        root_dir (str): Root directory containing 'images' and 'groundtruth' subdirectories.
-        transform (callable, optional): Optional transform to be applied on a sample (expects a dict with 'image' and 'mask').
-    Attributes:
-        images_dir (str): Path to the directory containing images.
-        masks_dir (str): Path to the directory containing masks.
-        image_filenames (List[str]): Sorted list of image filenames.
-        mask_filenames (List[str]): Sorted list of mask filenames.
-    Methods:
-        __len__(): Returns the number of samples in the dataset.
-        __getitem__(index): Loads and returns the image and mask at the specified index, applying transforms if provided.
-    Raises:
-        FileNotFoundError: If an image or mask file is not found at the expected path.
-    """
-
+class Dataset(BaseDataset):
     def __init__(self, root_dir, transform=None):
+        self.root_dir = root_dir
         self.transform = transform
-
         self.images_dir = os.path.join(root_dir, 'images')
         self.masks_dir = os.path.join(root_dir, 'groundtruth')
+        
+        # Smart file loading (ignores hidden files)
+        all_files = sorted(os.listdir(self.images_dir))
+        self.ids = [f for f in all_files if f.lower().endswith(('.png', '.jpg', '.jpeg', '.tif')) and not f.startswith('.')]
+        
+        # Verify masks exist
+        valid_ids = []
+        for f in self.ids:
+            if self._find_mask(f):
+                valid_ids.append(f)
+        self.ids = valid_ids
 
-        self.image_filenames = sorted(os.listdir(self.images_dir))
-        self.mask_filenames = sorted(os.listdir(self.masks_dir))
+    def _find_mask(self, filename):
+        # exact match
+        if os.path.exists(os.path.join(self.masks_dir, filename)):
+            return os.path.join(self.masks_dir, filename)
+        # partial match (e.g. image.jpg -> image.png)
+        base = os.path.splitext(filename)[0]
+        for ext in ['.png', '.tif', '.jpg', '_mask.png']:
+            cand = os.path.join(self.masks_dir, base + ext)
+            if os.path.exists(cand): return cand
+        return None
 
     def __len__(self):
-        return len(self.image_filenames)
+        return len(self.ids)
 
-    def __getitem__(self, index):
-
-        image_name = self.image_filenames[index]
-        mask_name = self.mask_filenames[index]
-
-        image_path = os.path.join(self.images_dir, image_name)
-        mask_path = os.path.join(self.masks_dir, mask_name)
-
-        image = cv2.imread(image_path)
-        if image is None:
-            raise FileNotFoundError(f"Image not found at {image_path}")
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    def __getitem__(self, idx):
+        filename = self.ids[idx]
+        img_path = os.path.join(self.images_dir, filename)
+        mask_path = self._find_mask(filename)
         
-        mask = cv2.imread(mask_path, 0)
-        if mask is None:
-            raise FileNotFoundError(f"Mask not found at {mask_path}")
+        image = cv2.imread(img_path)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+        _, mask = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
 
         if self.transform:
             augmented = self.transform(image=image, mask=mask)
             image = augmented['image']
             mask = augmented['mask']
+        else:
+            image = torch.from_numpy(image.transpose(2, 0, 1)).float() / 255.0
+            mask = torch.from_numpy(mask).long().unsqueeze(0)
 
-        return {
-            'image' : image, 
-            'mask' : mask
-            }
-    
+        if isinstance(mask, torch.Tensor):
+            mask = mask.float()
+            if mask.ndim == 2: mask = mask.unsqueeze(0)
+
+        return {'image': image, 'mask': mask}
