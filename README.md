@@ -32,7 +32,7 @@ project-2-als-main/
 🚀 Key Features
 Models:
 
-U-Net: Custom implementation using a ResNet18 encoder with skip connections.
+**U-Net**: Custom implementation using a ResNet18 encoder with skip connections.
 
 SegFormer: Fine-tuning script for SegFormer-mit_b2 using segmentation_models_pytorch.
 
@@ -52,9 +52,6 @@ Bash
 
 pip install torch torchvision albumentations opencv-python segmentation-models-pytorch wandb numpy
 2. Data Preparation
-Important: The dataset is not included in this repository due to size constraints. You must create a data directory in the root of the project and structure it as follows:
-
-Plaintext
 
 data/
 ├── training/
