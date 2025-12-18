@@ -32,7 +32,7 @@ project-2-als-main/
 🚀 Key Features
 Models:
 
-**U-Net**: Custom implementation using a ResNet18 encoder with skip connections.
+*U-Net*: Custom implementation using a ResNet18 encoder with skip connections.
 
 SegFormer: Fine-tuning script for SegFormer-mit_b2 using segmentation_models_pytorch.
 
